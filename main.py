@@ -4,34 +4,27 @@ from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 
-# Загружаем токены из .env
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 BOT_USERNAME = os.getenv("BOT_USERNAME")
 
-async def ask_ai(prompt):
+async def ask_ai(prompt: str) -> str:
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "HTTP-Referer": f"https://t.me/{BOT_USERNAME}",
         "Content-Type": "application/json"
     }
-    data = {
-        "model": "deepseek/deepseek-r1-0528-qwen3-8b:free",
-        "messages": [{"role": "user", "content": prompt}]
-    }
-
+    data = {"model": "deepseek/deepseek-r1-0528-qwen3-8b:free", "messages": [{"role": "user", "content": prompt}]}
     response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
     response.raise_for_status()
-    return response.json()['choices'][0]['message']['content']
+    return response.json()["choices"][0]["message"]["content"]
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_msg = update.message.text
-    # Можно добавить "печатает..." и обработку ошибок
     try:
         await update.message.chat.send_action(action="typing")
-        reply = await ask_ai(user_msg)
-    except Exception as e:
+        reply = await ask_ai(update.message.text)
+    except Exception:
         reply = "Извините, сервис временно недоступен."
     await update.message.reply_text(reply)
 
@@ -41,5 +34,5 @@ def main():
     print("Бот запущен!")
     app.run_polling()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
